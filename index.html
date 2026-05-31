@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>work:SSU:pace</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ssu1:#62c6c4;--ssu2:#02a6cb;--ssu3:#006e93;
+  --bl:#cdf0f7;
+  --green:#16a34a;--gl:#dcfce7;
+  --g50:#f8fafc;--g100:#f1f5f9;--g200:#e2e8f0;
+  --g400:#94a3b8;--g600:#475569;--g800:#1e293b;
+  --red:#dc2626;--rl:#fee2e2;
+  --purple:#7c3aed;--pl:#ede9fe;
+  --r:10px;--sh:0 1px 4px rgba(0,0,0,0.08);
+}
+body{font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(--g50);color:var(--g800);min-height:100vh;}
+
+/* ── VIEWS ── */
+.view{display:none;}
+.view.active{display:flex;flex-direction:column;min-height:100vh;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes cardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes cardOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-12px)}}
+.anim-fadeup{animation:fadeUp 0.55s cubic-bezier(0.22,1,0.36,1) both;}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeRight{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}
+@keyframes countUp{from{opacity:0}to{opacity:1}}
+.anim-fadedown{animation:fadeDown 0.45s cubic-bezier(0.22,1,0.36,1) both;}
+.anim-faderight{animation:fadeRight 0.45s cubic-bezier(0.22,1,0.36,1) both;}
+
+.anim-fadein{animation:fadeIn 0.5s ease both;}
+.card-enter{animation:cardIn 0.4s cubic-bezier(0.22,1,0.36,1) both;}
+.card-fadedown{animation:fadeDown 0.4s cubic-bezier(0.22,1,0.36,1) both;}
+.card-exit{animation:cardOut 0.25s ease forwards;}
+
+
+/* ── NICKNAME ONBOARDING ── */
+.nick-overlay{position:fixed;inset:0;background:var(--g50);z-index:500;display:flex;align-items:center;justify-content:center;padding:1.5rem;}
+.nick-overlay.hidden{display:none;}
+.nick-card{background:#fff;border-radius:16px;padding:2.5rem 2rem;max-width:420px;width:100%;box-shadow:0 8px 40px rgba(2,166,203,0.15);text-align:center;animation:fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) both;margin:auto;}
+.nick-logo{font-size:2.8rem;font-weight:900;font-family:'Arial Black','Helvetica Neue',sans-serif;letter-spacing:-0.02em;margin-bottom:1.5rem;display:flex;align-items:baseline;justify-content:center;gap:0;flex-wrap:nowrap;width:100%;}
+.nick-q{font-size:1.15rem;font-weight:700;color:var(--g800);margin-bottom:0.4rem;}
+.nick-sub{font-size:0.83rem;color:var(--g400);margin-bottom:1.5rem;}
+.nick-input{width:100%;padding:12px 16px;border:2px solid var(--g200);border-radius:10px;font-size:1rem;font-weight:600;color:var(--g800);outline:none;text-align:center;font-family:inherit;transition:border 0.15s;}
+.nick-input:focus{border-color:var(--ssu2);box-shadow:0 0 0 3px #cdf0f7;}
+.nick-btn{margin-top:1rem;width:100%;padding:12px;background:var(--ssu2);color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:background 0.15s;font-family:inherit;}
+.nick-btn:hover{background:#0195b5;}
+
+/* ── SUBTITLE ── */
+.home-subtitle{text-align:center;font-size:1rem;font-weight:600;color:#006e93;margin-bottom:1.6rem;display:flex;align-items:center;justify-content:center;gap:6px;}
+.home-subtitle .edit-nick{background:none;border:none;cursor:pointer;font-size:0.75rem;color:var(--g400);padding:2px 6px;border-radius:5px;transition:all 0.15s;}
+.home-subtitle .edit-nick:hover{background:var(--bl);color:var(--ssu2);}
+
+/* ── NICK EDIT MODAL ── */
+.nick-edit-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.4);z-index:300;align-items:center;justify-content:center;padding:1rem;}
+.nick-edit-overlay.open{display:flex;}
+.nick-edit-card{background:#fff;border-radius:12px;padding:1.5rem;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.18);animation:pop 0.18s ease;}
+.nick-edit-card h3{font-size:0.97rem;font-weight:700;margin-bottom:1rem;color:var(--g800);}
+
+/* ── HEADER (kanban view) ── */
+#view-kanban header{background:#fff;border-bottom:1px solid var(--g200);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100;gap:8px;}
+.header-crumb{font-size:0.78rem;color:var(--g400);display:flex;align-items:center;gap:6px;}
+.header-crumb .sep{color:var(--g200);}
+.header-crumb .proj-name{color:var(--g800);font-weight:600;}
+nav{display:flex;gap:3px;flex-wrap:wrap;}
+nav button{background:none;border:none;padding:5px 11px;border-radius:6px;font-size:0.82rem;cursor:pointer;color:var(--g600);font-weight:500;transition:all 0.15s;white-space:nowrap;}
+nav button.active{background:var(--bl);color:var(--ssu2);}
+nav button:hover:not(.active){background:var(--g100);}
+.btn-back{display:flex;align-items:center;gap:5px;background:var(--g100);border:none;padding:6px 12px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;color:var(--g600);transition:all 0.15s;}
+.btn-back:hover{background:var(--g200);}
+
+/* ── HOME ── */
+#view-home{background:var(--g50);position:relative;overflow:hidden;}
+.home-header{height:58px;display:flex;align-items:center;justify-content:center;position:sticky;top:0;z-index:10;background:var(--g50);}
+.home-wrap{flex:1;padding:2rem 1.5rem;max-width:1200px;margin:0 auto;width:100%;display:flex;flex-direction:column;}
+
+/* LOGO – big title */
+.logo-title{display:flex;align-items:baseline;justify-content:center;gap:0;font-size:clamp(3rem,9vw,9rem);font-weight:900;font-family:'Arial Black','Helvetica Neue',sans-serif;letter-spacing:-0.02em;line-height:1;text-align:center;margin-bottom:1.5rem;}
+.logo-work{color:#006e93;}
+.logo-sep{color:#02a6cb;font-weight:400;margin:0 0.04em;}
+.logo-ssu{color:#62c6c4;}
+.logo-pace{color:#006e93;}
+
+.home-hero{margin-bottom:2rem;text-align:center;}
+.home-hero h1{font-size:1.4rem;font-weight:800;color:var(--g800);margin-bottom:6px;}
+.home-hero p{font-size:0.88rem;color:var(--g600);}
+
+/* empty center text */
+.home-empty-center{display:none;position:absolute;inset:0;align-items:center;justify-content:center;pointer-events:none;z-index:0;}
+.home-empty-center.show{display:flex;}
+.home-empty-center span{font-size:1.5rem;font-weight:800;color:var(--ssu2);opacity:0.5;text-align:center;}
+
+.home-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px;position:relative;z-index:1;}
+.home-toolbar h2{font-size:0.95rem;font-weight:700;color:var(--g800);}
+.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;position:relative;z-index:1;}
+.proj-card{background:#fff;border:1px solid var(--g200);border-radius:12px;padding:1.25rem;cursor:pointer;transition:transform 0.18s,box-shadow 0.18s,border-color 0.18s;box-shadow:var(--sh);display:flex;flex-direction:column;gap:0.75rem;}
+.proj-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.1);border-color:var(--ssu2);}
+.proj-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.proj-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;}
+.proj-info{flex:1;}
+.proj-card-name{font-size:0.95rem;font-weight:700;color:var(--g800);margin-bottom:2px;}
+.proj-card-meta{font-size:0.73rem;color:var(--g400);}
+.proj-card-actions{display:flex;gap:5px;}
+.btn-icon{background:none;border:1px solid var(--g200);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.8rem;color:var(--g600);transition:all 0.15s;}
+.btn-icon:hover{background:var(--g100);}
+.proj-progress-wrap{display:flex;flex-direction:column;gap:4px;}
+.proj-progress-top{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--g600);}
+.proj-track{height:6px;background:var(--g100);border-radius:99px;overflow:hidden;}
+.proj-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#62c6c4,#02a6cb,#006e93);transition:width 0.5s;}
+.proj-stats{display:flex;gap:8px;flex-wrap:wrap;}
+.proj-stat{font-size:0.72rem;padding:2px 8px;border-radius:99px;font-weight:600;}
+.ps-todo{background:var(--g100);color:var(--g600);}
+.ps-prog{background:#cdf0f7;color:var(--ssu2);}
+.ps-done{background:#cde8f0;color:var(--ssu3);}
+.proj-enter{display:flex;align-items:center;justify-content:flex-end;font-size:0.78rem;font-weight:600;color:var(--ssu2);gap:4px;}
+
+/* background logo */
+.home-bg-logo{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(22vw,200px);opacity:0.5;pointer-events:none;z-index:0;user-select:none;}
+.home-bg-logo img{width:100%;height:auto;display:block;}
+
+/* ── BUTTONS ── */
+.btn-primary{background:var(--ssu2);color:#fff;border:none;padding:7px 13px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.15s;}
+.btn-primary:hover{background:#0195b5;}
+.btn-secondary{background:#fff;color:var(--g600);border:1px solid var(--g200);padding:7px 13px;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+.btn-secondary:hover{background:var(--g100);}
+
+/* ── KANBAN VIEW ── */
+.kb-wrap{flex:1;padding:1.25rem;max-width:1280px;margin:0 auto;width:100%;}
+.kb-page{display:none;}
+.kb-page.active{display:block;}
+.project-bar{background:#fff;border:1px solid var(--g200);border-radius:var(--r);padding:0.9rem 1.1rem;margin-bottom:1.1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+.project-name{font-size:0.95rem;font-weight:700;color:var(--g800);white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.progress-wrap{flex:1;min-width:180px;}
+.progress-labels{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--g600);margin-bottom:4px;}
+.progress-track{height:9px;background:var(--g200);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#62c6c4,#02a6cb,#006e93);transition:width 0.5s cubic-bezier(0.4,0,0.2,1);width:0%;}
+.progress-pct{font-size:0.78rem;font-weight:700;color:var(--ssu2);}
+.bar-btns{display:flex;gap:6px;flex-wrap:wrap;}
+
+/* ── LINK BAR ── */
+.link-bar{margin-bottom:1rem;}
+.link-bar-inner{background:#fff;border:1px solid var(--g200);border-radius:var(--r);padding:0.75rem 1rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center;row-gap:6px;}
+.link-chip{display:inline-flex;align-items:center;gap:5px;background:var(--bl);color:var(--ssu3);font-size:0.78rem;font-weight:600;padding:4px 10px;border-radius:6px;text-decoration:none;border:1px solid #9adce8;transition:all 0.15s;}
+.link-chip:hover{background:#b3eaf4;border-color:var(--ssu2);}
+.link-chip .lc-del{background:none;border:none;cursor:pointer;color:var(--ssu3);font-size:0.78rem;padding:0 2px;line-height:1;opacity:0.6;}
+.link-chip .lc-del:hover{opacity:1;color:var(--red);}
+.btn-add-link{background:none;border:1px dashed var(--g400);color:var(--g600);font-size:0.78rem;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.btn-add-link:hover{border-color:var(--ssu2);color:var(--ssu2);background:var(--bl);}
+.link-bar-label{font-size:0.75rem;font-weight:700;color:var(--g400);white-space:nowrap;}
+
+/* ── KANBAN BOARD ── */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+@media(max-width:720px){.kanban{grid-template-columns:1fr;}.projects-grid{grid-template-columns:1fr;}}
+.column{background:var(--g100);border-radius:var(--r);padding:0.7rem;}
+.col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.7rem;padding:0 0.2rem;}
+.col-title{font-size:0.83rem;font-weight:700;color:var(--g600);display:flex;align-items:center;gap:5px;}
+.col-count{background:var(--g200);color:var(--g600);font-size:0.72rem;font-weight:600;border-radius:99px;padding:1px 7px;}
+.cards{display:flex;flex-direction:column;gap:0.55rem;min-height:70px;}
+
+/* CARD */
+.card{background:#fff;border:1px solid var(--g200);border-radius:8px;padding:0.8rem 0.9rem;box-shadow:var(--sh);transition:transform 0.15s,box-shadow 0.15s;}
+.card:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.card.in-progress{background:#62c6c4;border-color:#4db8b6;}
+.card.done{background:#006e93;border-color:#005a78;}
+.card-title{font-size:0.88rem;font-weight:600;margin-bottom:0.45rem;color:var(--g800);}
+.card.in-progress .card-title,.card.in-progress .card-meta span{color:#1e293b;}
+.card.in-progress .chip{background:rgba(255,255,255,0.55);color:#005a78;}
+.card.done .card-title,.card.done .card-meta span{color:#fff;}
+.card.done .chip{background:rgba(255,255,255,0.22);color:#cdf0f7;}
+.card.done .badge-done{color:#adf;}
+.card-meta{display:flex;flex-direction:column;gap:3px;margin-bottom:0.6rem;}
+.card-meta span{font-size:0.73rem;color:var(--g600);display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.member-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;}
+.chip{background:var(--bl);color:var(--ssu2);font-size:0.68rem;font-weight:600;padding:1px 7px;border-radius:99px;}
+.card-actions{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap;}
+.action-left,.action-right{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.btn-sm{font-size:0.72rem;font-weight:600;padding:4px 10px;border-radius:6px;border:none;cursor:pointer;transition:background 0.15s;}
+.btn-start{background:var(--bl);color:var(--ssu2);}
+.btn-start:hover{background:#b3eaf4;}
+.btn-done{background:#d1fae5;color:var(--green);}
+.btn-done:hover{background:#a7f3d0;}
+.btn-revert{background:var(--rl);color:var(--red);}
+.btn-revert:hover{background:#fecaca;}
+.btn-edit-sm{background:rgba(255,255,255,0.85);color:var(--g600);border:1px solid var(--g200);}
+.btn-edit-sm:hover{background:var(--g200);}
+.btn-fb{background:var(--pl);color:var(--purple);border:none;}
+.btn-fb:hover{background:#ddd6fe;}
+.badge-done{font-size:0.72rem;color:var(--green);font-weight:600;}
+.fb-cnt{background:var(--purple);color:#fff;border-radius:99px;font-size:0.62rem;padding:0 5px;font-weight:700;}
+
+/* FILE SECTION inside card */
+.card-files{margin-top:0.5rem;display:flex;flex-wrap:wrap;gap:5px;}
+.file-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.7);border:1px solid var(--g200);border-radius:5px;padding:3px 8px;font-size:0.7rem;color:var(--g800);cursor:pointer;text-decoration:none;transition:all 0.15s;max-width:140px;}
+.file-chip:hover{background:#fff;border-color:var(--ssu2);}
+.file-chip .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-chip .fdel{background:none;border:none;cursor:pointer;color:var(--g400);font-size:0.75rem;padding:0;margin-left:2px;line-height:1;}
+.file-chip .fdel:hover{color:var(--red);}
+.btn-add-file{font-size:0.7rem;font-weight:600;padding:3px 8px;border-radius:5px;border:1px dashed var(--g400);background:rgba(255,255,255,0.5);color:var(--g600);cursor:pointer;transition:all 0.15s;}
+.btn-add-file:hover{border-color:var(--ssu2);color:var(--ssu2);}
+.hidden-input{display:none;}
+
+/* ── STATS/LOG ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.9rem;margin-bottom:1.2rem;}
+.stat-card{background:#fff;border:1px solid var(--g200);border-radius:var(--r);padding:0.9rem 1.1rem;}
+.stat-card .lbl{font-size:0.72rem;color:var(--g400);font-weight:600;margin-bottom:3px;}
+.stat-card .val{font-size:1.5rem;font-weight:700;color:var(--g800);}
+.stat-card .sub{font-size:0.72rem;color:var(--g400);margin-top:2px;}
+.member-section,.log-section{background:#fff;border:1px solid var(--g200);border-radius:var(--r);padding:1.1rem;}
+.member-section h3,.log-section h3{font-size:0.87rem;font-weight:700;margin-bottom:0.9rem;color:var(--g800);}
+.mrow{margin-bottom:1rem;}
+.minfo{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:5px;}
+.mname{font-size:0.85rem;font-weight:600;display:flex;align-items:center;gap:7px;}
+.avatar{width:26px;height:26px;border-radius:50%;background:var(--bl);color:var(--ssu2);font-size:0.7rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+.mpills{display:flex;gap:5px;flex-wrap:wrap;}
+.pill{padding:2px 7px;border-radius:99px;font-weight:600;font-size:0.7rem;}
+.p-todo{background:var(--g100);color:var(--g600);}
+.p-prog{background:#cdf0f7;color:var(--ssu2);}
+.p-done{background:#cde8f0;color:var(--ssu3);}
+.btrack{height:7px;background:var(--g100);border-radius:99px;overflow:hidden;}
+.bfill{height:100%;border-radius:99px;background:linear-gradient(90deg,#62c6c4,#02a6cb,#006e93);transition:width 0.6s cubic-bezier(0.4,0,0.2,1);}
+.blbl{font-size:0.7rem;color:var(--g400);margin-top:2px;text-align:right;}
+.log-item{display:flex;gap:10px;padding:0.55rem 0;border-bottom:1px solid var(--g100);align-items:flex-start;}
+.log-item:last-child{border-bottom:none;}
+.log-dot{width:8px;height:8px;border-radius:50%;background:var(--ssu2);margin-top:5px;flex-shrink:0;}
+.log-dot.edit{background:#ca8a04;}
+.log-dot.revert{background:var(--red);}
+.log-dot.add{background:var(--green);}
+.log-dot.feedback{background:var(--purple);}
+.log-body{flex:1;}
+.log-desc{font-size:0.82rem;color:var(--g800);line-height:1.5;}
+.log-time{font-size:0.7rem;color:var(--g400);margin-top:2px;}
+.no-item{font-size:0.8rem;color:var(--g400);text-align:center;padding:1rem 0;}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:200;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:12px;padding:1.4rem;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:pop 0.18s ease;max-height:90vh;overflow-y:auto;}
+.modal.wide{max-width:520px;}
+.modal.narrow{max-width:380px;}
+@keyframes pop{from{transform:scale(0.95);opacity:0}to{transform:scale(1);opacity:1}}
+.modal h2{font-size:0.97rem;font-weight:700;margin-bottom:1.1rem;color:var(--g800);}
+.form-group{margin-bottom:0.9rem;}
+.form-group label{display:block;font-size:0.78rem;font-weight:600;color:var(--g600);margin-bottom:4px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:7px 11px;border:1px solid var(--g200);border-radius:7px;font-size:0.85rem;color:var(--g800);outline:none;transition:border 0.15s;font-family:inherit;background:#fff;}
+.form-group textarea{resize:vertical;min-height:65px;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--ssu2);box-shadow:0 0 0 3px #cdf0f7;}
+.modal-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:1rem;}
+.btn-cancel{background:var(--g100);color:var(--g600);border:none;padding:7px 14px;border-radius:7px;font-size:0.83rem;font-weight:600;cursor:pointer;}
+.btn-confirm{background:var(--ssu2);color:#fff;border:none;padding:7px 16px;border-radius:7px;font-size:0.83rem;font-weight:600;cursor:pointer;}
+.btn-confirm:hover{background:#0195b5;}
+.btn-danger{background:var(--rl);color:var(--red);border:none;padding:7px 14px;border-radius:7px;font-size:0.83rem;font-weight:600;cursor:pointer;}
+
+/* emoji/color picker */
+.emoji-row{display:flex;flex-wrap:wrap;gap:6px;}
+.emoji-opt{width:36px;height:36px;border-radius:8px;border:1px solid var(--g200);background:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.12s;}
+.emoji-opt.selected,.emoji-opt:hover{border-color:var(--ssu2);background:var(--bl);}
+.color-row{display:flex;gap:6px;flex-wrap:wrap;}
+.color-opt{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.12s;}
+.color-opt.selected,.color-opt:hover{border-color:var(--g800);transform:scale(1.1);}
+
+/* member checks */
+.member-check-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px;}
+.mci{display:flex;align-items:center;gap:5px;background:var(--g100);border:2px solid var(--g200);border-radius:7px;padding:5px 10px;cursor:pointer;transition:all 0.12s;user-select:none;}
+.mci.sel{background:var(--bl);border-color:var(--ssu2);}
+.mci input[type=checkbox]{accent-color:var(--ssu2);width:14px;height:14px;cursor:pointer;}
+.mci span{font-size:0.82rem;font-weight:500;color:var(--g800);}
+
+/* team modal */
+.team-list{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:1rem;}
+.team-chip{display:flex;align-items:center;gap:6px;background:var(--g100);border:1px solid var(--g200);border-radius:7px;padding:5px 10px;font-size:0.83rem;font-weight:500;}
+.team-chip button{background:none;border:none;cursor:pointer;color:var(--g400);font-size:0.9rem;line-height:1;padding:0 2px;}
+.team-chip button:hover{color:var(--red);}
+.add-member-row{display:flex;gap:7px;}
+.add-member-row input{flex:1;padding:7px 11px;border:1px solid var(--g200);border-radius:7px;font-size:0.85rem;color:var(--g800);outline:none;font-family:inherit;}
+.add-member-row input:focus{border-color:var(--ssu2);box-shadow:0 0 0 3px #cdf0f7;}
+.add-member-row button{padding:7px 13px;border-radius:7px;border:none;background:var(--ssu2);color:#fff;font-size:0.83rem;font-weight:600;cursor:pointer;}
+
+/* feedback modal */
+.fb-task-info{background:var(--g100);border-radius:8px;padding:0.65rem 0.9rem;margin-bottom:0.9rem;}
+.fb-task-info .t{font-size:0.85rem;font-weight:700;color:var(--g800);}
+.fb-task-info .m{font-size:0.72rem;color:var(--g600);margin-top:2px;}
+.fb-list{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:0.55rem;margin-bottom:0.9rem;}
+.fb-item{background:var(--g50);border:1px solid var(--g200);border-radius:8px;padding:0.6rem 0.8rem;}
+.fb-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.fb-author{font-size:0.73rem;font-weight:700;color:var(--purple);}
+.fb-time{font-size:0.67rem;color:var(--g400);}
+.fb-text{font-size:0.79rem;color:var(--g800);line-height:1.5;}
+.fb-row{display:flex;gap:7px;}
+.fb-row select{width:130px;padding:7px 10px;border:1px solid var(--g200);border-radius:7px;font-size:0.83rem;color:var(--g800);outline:none;font-family:inherit;background:#fff;}
+.fb-row select:focus{border-color:var(--ssu2);box-shadow:0 0 0 3px #cdf0f7;}
+.fb-row input{flex:1;padding:7px 11px;border:1px solid var(--g200);border-radius:7px;font-size:0.83rem;color:var(--g800);outline:none;font-family:inherit;}
+.fb-row input:focus{border-color:var(--ssu2);box-shadow:0 0 0 3px #cdf0f7;}
+.btn-send{background:var(--purple);color:#fff;border:none;padding:7px 13px;border-radius:7px;font-size:0.83rem;font-weight:600;cursor:pointer;white-space:nowrap;}
+.btn-send:hover{background:#6d28d9;}
+.btn-fb-del{background:none;border:none;cursor:pointer;color:var(--g400);font-size:0.8rem;margin-left:4px;}
+.btn-fb-del:hover{color:var(--red);}
+
+/* link add modal */
+.link-input-row{display:flex;gap:7px;margin-bottom:8px;}
+.link-input-row input{flex:1;padding:7px 11px;border:1px solid var(--g200);border-radius:7px;font-size:0.85rem;color:var(--g800);outline:none;font-family:inherit;}
+.link-input-row input:focus{border-color:var(--ssu2);box-shadow:0 0 0 3px #cdf0f7;}
+</style>
+</head>
+<body>
+
+<!-- ══════════ HOME VIEW ══════════ -->
+<div id="view-home" class="view active">
+  <div class="home-header"></div>
+  <div class="home-wrap">
+
+    <!-- Logo title -->
+    <div class="logo-title anim-fadeup" style="animation-delay:0s">
+      <span class="logo-work">work</span><span class="logo-sep">:</span><span class="logo-ssu">SSU</span><span class="logo-sep">:</span><span class="logo-pace">pace</span>
+    </div>
+
+    <!-- Subtitle -->
+    <div class="home-subtitle anim-fadeup" id="home-subtitle" style="animation-delay:0.08s">
+      <span id="subtitle-text"></span>
+      <button class="edit-nick" onclick="openNickEdit()" title="닉네임 수정">✏️</button>
+    </div>
+
+    <!-- Empty center text (shown when no projects) -->
+    <div class="home-empty-center" id="home-empty-center">
+      <span class="anim-fadeup" style="animation-delay:0.12s">새로운 도전을 시작하기! 🚀</span>
+    </div>
+
+    <!-- Hero -->
+    <div class="home-hero">
+      <h1 class="anim-fadeup" style="animation-delay:0.15s">내 팀 프로젝트</h1>
+      <p class="anim-fadeup" style="animation-delay:0.22s">팀 프로젝트를 만들고 칸반 보드로 일정을 관리해보세요.</p>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="home-toolbar">
+      <h2 class="anim-fadeup" id="proj-count-label" style="animation-delay:0.3s">프로젝트 0개</h2>
+      <button class="btn-primary anim-fadeup" style="animation-delay:0.38s" onclick="openNewProjModal()">＋ 새 프로젝트 추가</button>
+    </div>
+
+    <!-- Projects grid -->
+    <div class="projects-grid" id="projects-grid"></div>
+  </div>
+
+  <!-- Background logo -->
+  <div class="home-bg-logo anim-fadein" style="animation-delay:0.7s">
+    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAMABAADASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAcIAgUGAwQB/8QAThABAAECAwEHDQ4FAwQCAwAAAAECAwQFEQYHEhQhMXKyEzNBUVRhcXSBkZLB0RUXIjQ1NjdTVZOhorHSCBYjMlIkgpRiZOHwJkJzg8L/xAAbAQEAAgMBAQAAAAAAAAAAAAAABQYBAwQCB//EADYRAQABAgQCCAUEAgMAAwAAAAABAgMEBRExEjITFTNBUVJxgQYUIULBFlNhoSKxQ5HhJDTw/9oADAMBAAIRAxEAPwC0YDLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/9k=" alt="SSU logo">
+  </div>
+</div>
+
+<!-- ══════════ KANBAN VIEW ══════════ -->
+<div id="view-kanban" class="view">
+  <header>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button class="btn-back" onclick="goHome()">← 홈</button>
+      <div class="header-crumb">
+        <span class="sep">/</span>
+        <span class="proj-name" id="kb-header-name"></span>
+      </div>
+    </div>
+    <nav>
+      <button class="active" onclick="showKbPage('board',this)">📌 칸반 보드</button>
+      <button onclick="showKbPage('stats',this)">📊 기여도</button>
+      <button onclick="showKbPage('log',this)">📝 진행 로그</button>
+    </nav>
+  </header>
+  <div class="kb-wrap">
+
+    <!-- 보드 -->
+    <div id="kb-board" class="kb-page active">
+      <!-- 외부 링크 바 -->
+      <div class="link-bar">
+        <div class="link-bar-inner" id="link-bar-inner">
+          <span class="link-bar-label">🔗 외부 링크</span>
+          <div id="link-chips"></div>
+          <button class="btn-add-link" onclick="openLinkModal()">+ 링크 추가</button>
+        </div>
+      </div>
+
+      <div class="project-bar">
+        <div class="project-name" id="kb-proj-icon-name"></div>
+        <div class="progress-wrap">
+          <div class="progress-labels">
+            <span>전체 진행률</span>
+            <span class="progress-pct" id="pct-text">0%</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        </div>
+        <div class="bar-btns">
+          <button class="btn-secondary" onclick="openTeamModal()">👥 팀원 관리</button>
+          <button class="btn-primary"   onclick="openAddModal()">＋ 새 작업 추가</button>
+        </div>
+      </div>
+
+      <div class="kanban">
+        <div class="column">
+          <div class="col-header"><div class="col-title">📋 할 일 <span id="cnt-todo" class="col-count">0</span></div></div>
+          <div class="cards" id="col-todo"></div>
+        </div>
+        <div class="column">
+          <div class="col-header"><div class="col-title">🔄 진행 중 <span id="cnt-progress" class="col-count">0</span></div></div>
+          <div class="cards" id="col-progress"></div>
+        </div>
+        <div class="column">
+          <div class="col-header"><div class="col-title">✅ 완료 <span id="cnt-done" class="col-count">0</span></div></div>
+          <div class="cards" id="col-done"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 기여도 -->
+    <div id="kb-stats" class="kb-page">
+      <div class="stats-grid" id="stats-summary"></div>
+      <div class="member-section"><h3>팀원별 기여도</h3><div id="member-bars"></div></div>
+    </div>
+
+    <!-- 진행 로그 -->
+    <div id="kb-log" class="kb-page">
+      <div class="log-section"><h3>📝 진행 로그</h3><div id="log-list"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 새 프로젝트 모달 ── -->
+<div class="modal-overlay" id="new-proj-overlay">
+  <div class="modal narrow">
+    <h2>＋ 새 프로젝트 추가</h2>
+    <div class="form-group"><label>프로젝트 이름</label><input type="text" id="np-name" placeholder="예: 캡스톤 디자인 프로젝트"></div>
+    <div class="form-group"><label>아이콘</label><div class="emoji-row" id="emoji-row"></div></div>
+    <div class="form-group"><label>카드 색상</label><div class="color-row" id="color-row"></div></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeNewProjModal()">취소</button>
+      <button class="btn-confirm" onclick="createProject()">만들기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 프로젝트 수정 모달 ── -->
+<div class="modal-overlay" id="edit-proj-overlay">
+  <div class="modal narrow">
+    <h2>✏️ 프로젝트 수정</h2>
+    <div class="form-group"><label>프로젝트 이름</label><input type="text" id="ep-name"></div>
+    <div class="form-group"><label>아이콘</label><div class="emoji-row" id="ep-emoji-row"></div></div>
+    <div class="form-group"><label>카드 색상</label><div class="color-row" id="ep-color-row"></div></div>
+    <div class="modal-actions">
+      <button class="btn-danger" onclick="deleteProject()">삭제</button>
+      <button class="btn-cancel" onclick="closeEditProjModal()">취소</button>
+      <button class="btn-confirm" onclick="saveProject()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 팀원 관리 ── -->
+<div class="modal-overlay" id="team-overlay">
+  <div class="modal narrow">
+    <h2>👥 팀원 관리</h2>
+    <div class="team-list" id="team-list"></div>
+    <div class="add-member-row">
+      <input type="text" id="inp-new-member" placeholder="팀원 이름 입력" onkeydown="if(event.key==='Enter')addMember()">
+      <button onclick="addMember()">추가</button>
+    </div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeTeamModal()">닫기</button></div>
+  </div>
+</div>
+
+<!-- ── 새 작업 추가 ── -->
+<div class="modal-overlay" id="add-overlay">
+  <div class="modal">
+    <h2>＋ 새 작업 추가</h2>
+    <div class="form-group"><label>작업 이름</label><input type="text" id="inp-title" placeholder="예: 발표 자료 제작"></div>
+    <div class="form-group"><label>담당 팀원 (복수 선택 가능)</label><div class="member-check-list" id="add-member-checks"></div></div>
+    <div class="form-group"><label>마감일</label><input type="date" id="inp-date"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAddModal()">취소</button>
+      <button class="btn-confirm" onclick="addTask()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 카드 수정 ── -->
+<div class="modal-overlay" id="edit-overlay">
+  <div class="modal">
+    <h2>✏️ 작업 수정</h2>
+    <div class="form-group"><label>작업 이름</label><input type="text" id="edit-title"></div>
+    <div class="form-group"><label>담당 팀원 (복수 선택 가능)</label><div class="member-check-list" id="edit-member-checks"></div></div>
+    <div class="form-group"><label>마감일</label><input type="date" id="edit-date"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">취소</button>
+      <button class="btn-confirm" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 피드백 ── -->
+<div class="modal-overlay" id="fb-overlay">
+  <div class="modal wide">
+    <h2>💬 피드백</h2>
+    <div class="fb-task-info">
+      <div class="t" id="fb-task-title"></div>
+      <div class="m" id="fb-task-meta"></div>
+    </div>
+    <div class="fb-list" id="fb-list"></div>
+    <div class="fb-row">
+      <select id="fb-author-sel"><option value="">이름 선택</option></select>
+      <input type="text" id="fb-input" placeholder="피드백을 입력하세요..." onkeydown="if(event.key==='Enter')submitFeedback()">
+      <button class="btn-send" onclick="submitFeedback()">전송</button>
+    </div>
+    <div class="modal-actions" style="margin-top:0.75rem">
+      <button class="btn-cancel" onclick="closeFbModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 링크 추가 모달 ── -->
+<div class="modal-overlay" id="link-overlay">
+  <div class="modal narrow">
+    <h2>🔗 외부 링크 추가</h2>
+    <div class="form-group"><label>링크 이름</label><input type="text" id="link-name" placeholder="예: LMS 과제 제출"></div>
+    <div class="form-group"><label>URL</label><input type="url" id="link-url" placeholder="https://"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeLinkModal()">취소</button>
+      <button class="btn-confirm" onclick="addLink()">추가</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-input" class="hidden-input" multiple onchange="handleFileUpload(event)">
+
+<script>
+/* ══ CONFIG ══ */
+const EMOJIS=['🎓','💻','📱','🔬','🎨','📊','🚀','🌐','🏗️','🎯','📝','🔧'];
+const COLORS=['#cdf0f7','#dcfce7','#fef9c3','#ede9fe','#fee2e2','#e0f2fe','#fce7f3','#f0fdf4'];
+
+/* ══ STATE ══ */
+let projects=[], nextProjId=1, nextTaskId=1;
+let activeProjId=null, activeEditTaskId=null, activeFbTaskId=null, activeEditProjId=null;
+let activeFileTaskId=null;
+let selEmoji=EMOJIS[0], selColor=COLORS[0], epSelEmoji=EMOJIS[0], epSelColor=COLORS[0];
+
+const SL={todo:'할 일',progress:'진행 중',done:'완료'};
+function prevS(s){return s==='progress'?'todo':s==='done'?'progress':null;}
+function nextS(s){return s==='todo'?'progress':s==='progress'?'done':null;}
+function av(n){return n.length>=2?n.slice(0,2):n;}
+function fd(s){if(!s)return'';const[,m,d]=s.split('-');return m+'/'+d;}
+function isDue(due,st){return st!=='done'&&due&&new Date(due)<new Date();}
+function nowStr(){const d=new Date();return String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function P(){return projects.find(p=>p.id===activeProjId);}
+function addLog(type,desc){P().logs.unshift({type,desc,time:nowStr()});}
+
+/* ══ HOME ══ */
+function renderHome(){
+  const grid=document.getElementById('projects-grid');
+  const ec=document.getElementById('home-empty-center');
+  document.getElementById('proj-count-label').textContent='프로젝트 '+projects.length+'개';
+  if(projects.length===0){
+    ec.classList.add('show');
+    grid.innerHTML='';
+    return;
+  }
+  ec.classList.remove('show');
+  grid.innerHTML=projects.map((p,i)=>{
+    const total=p.tasks.length,done=p.tasks.filter(t=>t.status==='done').length;
+    const prog=p.tasks.filter(t=>t.status==='progress').length,todo=p.tasks.filter(t=>t.status==='todo').length;
+    const pct=total?Math.round(done/total*100):0;
+    const delay=(0.42+i*0.09).toFixed(2);
+    return '<div class="proj-card anim-fadeup" style="animation-delay:'+delay+'s" onclick="openProject('+p.id+')" data-proj="'+p.id+'">'+
+      '<div class="proj-card-header">'+
+        '<div style="display:flex;align-items:center;gap:10px;flex:1;">'+
+          '<div class="proj-icon" style="background:'+p.color+'">'+p.emoji+'</div>'+
+          '<div class="proj-info"><div class="proj-card-name">'+p.name+'</div><div class="proj-card-meta">팀원 '+p.members.length+'명 · 작업 '+total+'개</div></div>'+
+        '</div>'+
+        '<div class="proj-card-actions" onclick="event.stopPropagation()">'+
+          '<button class="btn-icon" onclick="openEditProjModal('+p.id+')" title="수정">✏️</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="proj-progress-wrap">'+
+        '<div class="proj-progress-top"><span>진행률</span><span style="font-weight:700;color:var(--ssu2)">'+pct+'%</span></div>'+
+        '<div class="proj-track"><div class="proj-fill" style="width:'+pct+'%"></div></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+        '<div class="proj-stats">'+
+          '<span class="proj-stat ps-todo">할 일 '+todo+'</span>'+
+          '<span class="proj-stat ps-prog">진행 중 '+prog+'</span>'+
+          '<span class="proj-stat ps-done">완료 '+done+'</span>'+
+        '</div>'+
+        '<div class="proj-enter">보드 열기 →</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ══ PROJECT CRUD ══ */
+function buildEmojiRow(cid,sel,fn){document.getElementById(cid).innerHTML=EMOJIS.map(e=>'<button class="emoji-opt'+(sel===e?' selected':'')+'" onclick="'+fn+'(\''+e+'\',this)">'+e+'</button>').join('');}
+function buildColorRow(cid,sel,fn){document.getElementById(cid).innerHTML=COLORS.map(c=>'<div class="color-opt'+(sel===c?' selected':'')+'" style="background:'+c+'" onclick="'+fn+'(\''+c+'\',this)"></div>').join('');}
+function selectEmoji(e,el){selEmoji=e;document.querySelectorAll('#emoji-row .emoji-opt').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');}
+function selectColor(c,el){selColor=c;document.querySelectorAll('#color-row .color-opt').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');}
+function selectEpEmoji(e,el){epSelEmoji=e;document.querySelectorAll('#ep-emoji-row .emoji-opt').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');}
+function selectEpColor(c,el){epSelColor=c;document.querySelectorAll('#ep-color-row .color-opt').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');}
+
+function openNewProjModal(){selEmoji=EMOJIS[0];selColor=COLORS[0];document.getElementById('np-name').value='';buildEmojiRow('emoji-row',selEmoji,'selectEmoji');buildColorRow('color-row',selColor,'selectColor');document.getElementById('new-proj-overlay').classList.add('open');setTimeout(()=>document.getElementById('np-name').focus(),100);}
+function closeNewProjModal(){document.getElementById('new-proj-overlay').classList.remove('open');}
+function createProject(){const name=document.getElementById('np-name').value.trim();if(!name){alert('프로젝트 이름을 입력해주세요.');return;}projects.push({id:nextProjId++,name,emoji:selEmoji,color:selColor,members:[],tasks:[],feedbacks:{},logs:[],links:[]});closeNewProjModal();renderHome();}
+document.getElementById('new-proj-overlay').addEventListener('click',function(e){if(e.target===this)closeNewProjModal();});
+
+function openEditProjModal(id){activeEditProjId=id;const p=projects.find(x=>x.id===id);epSelEmoji=p.emoji;epSelColor=p.color;document.getElementById('ep-name').value=p.name;buildEmojiRow('ep-emoji-row',epSelEmoji,'selectEpEmoji');buildColorRow('ep-color-row',epSelColor,'selectEpColor');document.getElementById('edit-proj-overlay').classList.add('open');}
+function closeEditProjModal(){document.getElementById('edit-proj-overlay').classList.remove('open');activeEditProjId=null;}
+function saveProject(){const name=document.getElementById('ep-name').value.trim();if(!name){alert('프로젝트 이름을 입력해주세요.');return;}const p=projects.find(x=>x.id===activeEditProjId);p.name=name;p.emoji=epSelEmoji;p.color=epSelColor;closeEditProjModal();renderHome();}
+function deleteProject(){const p=projects.find(x=>x.id===activeEditProjId);if(!confirm('"'+p.name+'" 프로젝트를 삭제할까요?\n모든 작업과 데이터가 삭제됩니다.'))return;projects=projects.filter(x=>x.id!==activeEditProjId);closeEditProjModal();renderHome();}
+document.getElementById('edit-proj-overlay').addEventListener('click',function(e){if(e.target===this)closeEditProjModal();});
+
+/* ══ OPEN PROJECT ══ */
+function openProject(id){
+  activeProjId=id;const p=P();
+  document.getElementById('kb-header-name').textContent=p.name;
+  document.getElementById('kb-proj-icon-name').innerHTML='<span>'+p.emoji+'</span>'+p.name;
+  document.querySelectorAll('#view-kanban nav button').forEach((b,i)=>b.classList.toggle('active',i===0));
+  document.querySelectorAll('.kb-page').forEach(x=>x.classList.remove('active'));
+  document.getElementById('kb-board').classList.add('active');
+  document.getElementById('view-home').classList.remove('active');
+  document.getElementById('view-kanban').classList.add('active');
+  renderLinks();renderBoard();setTimeout(()=>updateProgress(true),50);
+}
+function goHome(){activeProjId=null;document.getElementById('view-kanban').classList.remove('active');document.getElementById('view-home').classList.add('active');renderHome();}
+
+/* ══ LINKS ══ */
+function renderLinks(){
+  const p=P();if(!p.links)p.links=[];
+  const total=p.links.length;
+  document.getElementById('link-chips').innerHTML=p.links.map((l,i)=>{
+    const delay=(i*0.08).toFixed(2);
+    return '<a class="link-chip anim-faderight" style="animation-delay:'+delay+'s" href="'+l.url+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 '+l.name+'<button class="lc-del" onclick="event.preventDefault();event.stopPropagation();removeLink('+i+')" title="삭제">✕</button></a>';
+  }).join('');
+  // animate the add-link button last
+  const addBtn=document.querySelector('.btn-add-link');
+  if(addBtn){const d=(total*0.08).toFixed(2);addBtn.style.animation='none';addBtn.offsetHeight;addBtn.style.animation='fadeRight 0.45s cubic-bezier(0.22,1,0.36,1) '+d+'s both';}
+}
+function openLinkModal(){document.getElementById('link-name').value='';document.getElementById('link-url').value='';document.getElementById('link-overlay').classList.add('open');setTimeout(()=>document.getElementById('link-name').focus(),100);}
+function closeLinkModal(){document.getElementById('link-overlay').classList.remove('open');}
+function addLink(){
+  const name=document.getElementById('link-name').value.trim();
+  let url=document.getElementById('link-url').value.trim();
+  if(!name||!url){alert('이름과 URL을 입력해주세요.');return;}
+  if(!/^https?:\/\//i.test(url))url='https://'+url;
+  if(!P().links)P().links=[];
+  P().links.push({name,url});
+  addLog('add','외부 링크 추가: '+name+' ('+url+')');
+  closeLinkModal();renderLinks();
+}
+function removeLink(i){if(!confirm('링크를 삭제할까요?'))return;P().links.splice(i,1);renderLinks();}
+document.getElementById('link-overlay').addEventListener('click',function(e){if(e.target===this)closeLinkModal();});
+
+/* ══ KANBAN ══ */
+function renderBoard_noAnim(){renderBoard();updateProgress(false);}
+function renderBoard(){
+  const p=P();
+  const cols={todo:[],progress:[],done:[]};
+  p.tasks.forEach(t=>cols[t.status].push(t));
+  document.getElementById('cnt-todo').textContent=cols.todo.length;
+  document.getElementById('cnt-progress').textContent=cols.progress.length;
+  document.getElementById('cnt-done').textContent=cols.done.length;
+  ['todo','progress','done'].forEach(s=>{
+    const el=document.getElementById('col-'+s);
+    el.innerHTML=cols[s].map((t,i)=>cardHTML(t,i)).join('');
+  });
+}
+
+function cardHTML(t,idx){
+  const cls=t.status==='done'?'done':t.status==='progress'?'in-progress':'';
+  const overdue=isDue(t.due,t.status);
+  const cnt=(P().feedbacks[t.id]||[]).length;
+  const badge=cnt>0?'<span class="fb-cnt">'+cnt+'</span>':'';
+  const chips=(t.members||[]).map(m=>'<span class="chip">'+m+'</span>').join('');
+  const prev=prevS(t.status);
+  const revert=prev?'<button class="btn-sm btn-revert" onclick="revert('+t.id+')">↩ 되돌리기</button>':'';
+  let fwd='';
+  if(t.status==='todo')fwd='<button class="btn-sm btn-start" onclick="advance('+t.id+')">시작하기 →</button>';
+  if(t.status==='progress')fwd='<button class="btn-sm btn-done" onclick="advance('+t.id+')">완료 ✓</button>';
+  if(t.status==='done')fwd='<span class="badge-done">✔ 완료됨</span>';
+
+  // files
+  const files=(t.files||[]).map((f,fi)=>
+    '<a class="file-chip" href="'+f.data+'" download="'+f.name+'" title="'+f.name+'">📄 <span class="fname">'+f.name+'</span><button class="fdel" onclick="event.preventDefault();event.stopPropagation();removeFile('+t.id+','+fi+')" title="삭제">✕</button></a>'
+  ).join('');
+
+  const delay=(idx*0.06).toFixed(2);
+  return '<div class="card '+cls+' card-fadedown" style="animation-delay:'+delay+'s" data-id="'+t.id+'">'+
+    '<div class="card-title">'+t.title+'</div>'+
+    '<div class="card-meta">'+
+      '<span>📅 '+fd(t.due)+' 마감'+(overdue?' <b>⚠ 기한초과</b>':'')+' </span>'+
+      '<span>👥 담당 <div class="member-chips">'+chips+'</div></span>'+
+    '</div>'+
+    (files||t.files&&t.files.length?'<div class="card-files">'+files+'<button class="btn-add-file" onclick="triggerFileUpload('+t.id+')">＋ 파일</button></div>':'<div class="card-files"><button class="btn-add-file" onclick="triggerFileUpload('+t.id+')">＋ 파일 첨부</button></div>')+
+    '<div class="card-actions">'+
+      '<div class="action-left">'+revert+fwd+'</div>'+
+      '<div class="action-right">'+
+        '<button class="btn-sm btn-edit-sm" onclick="openEditModal('+t.id+')">✏️ 수정</button>'+
+        '<button class="btn-sm btn-fb" onclick="openFbModal('+t.id+')">💬 피드백 '+badge+'</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function animateCardMove(taskId, callback){
+  const el=document.querySelector('.card[data-id="'+taskId+'"]');
+  if(el){el.classList.remove('card-enter');el.classList.add('card-exit');setTimeout(()=>{callback();renderBoard();},230);}
+  else{callback();renderBoard();}
+}
+function advance(id){
+  const t=P().tasks.find(x=>x.id===id);if(!t||!nextS(t.status))return;
+  const from=SL[t.status];
+  animateCardMove(id,()=>{t.status=nextS(t.status);addLog('advance','"'+t.title+'" 상태 변경: ['+from+'] → ['+SL[t.status]+']');renderBoard_noAnim();});
+}
+function revert(id){
+  const t=P().tasks.find(x=>x.id===id);if(!t||!prevS(t.status))return;
+  const from=SL[t.status],to=SL[prevS(t.status)];
+  if(!confirm('"'+t.title+'"\n['+from+'] → ['+to+'] 으로 되돌릴까요?'))return;
+  animateCardMove(id,()=>{t.status=prevS(t.status);addLog('revert','"'+t.title+'" 상태 되돌리기: ['+from+'] → ['+SL[t.status]+']');renderBoard_noAnim();});
+}
+function updateProgress(animate){
+  const p=P(),total=p.tasks.length,done=p.tasks.filter(t=>t.status==='done').length;
+  const pct=total?Math.round(done/total*100):0;
+  const fill=document.getElementById('progress-fill');
+  const pctEl=document.getElementById('pct-text');
+  if(animate){
+    fill.style.transition='none';fill.style.width='0%';
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      fill.style.transition='width 0.85s cubic-bezier(0.22,1,0.36,1)';
+      fill.style.width=pct+'%';
+    }));
+    countUpEl(pctEl, 0, pct, 850, v=>v+'%');
+  } else {
+    fill.style.width=pct+'%';
+    pctEl.textContent=pct+'%';
+  }
+}
+function countUpEl(el, from, to, dur, fmt){
+  const start=performance.now();
+  function step(now){
+    const t=Math.min((now-start)/dur,1);
+    const ease=1-Math.pow(1-t,3);
+    el.textContent=fmt(Math.round(from+(to-from)*ease));
+    if(t<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── FILES ── */
+function triggerFileUpload(taskId){activeFileTaskId=taskId;document.getElementById('file-input').value='';document.getElementById('file-input').click();}
+function handleFileUpload(e){
+  const files=[...e.target.files];if(!files.length)return;
+  const t=P().tasks.find(x=>x.id===activeFileTaskId);if(!t)return;
+  if(!t.files)t.files=[];
+  let loaded=0;
+  files.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      t.files.push({name:f.name,data:ev.target.result});
+      addLog('add','"'+t.title+'" 파일 첨부: '+f.name);
+      loaded++;if(loaded===files.length)renderBoard();
+    };
+    reader.readAsDataURL(f);
+  });
+}
+function removeFile(taskId,fi){
+  const t=P().tasks.find(x=>x.id===taskId);if(!t||!t.files)return;
+  if(!confirm('"'+t.files[fi].name+'" 파일을 삭제할까요?'))return;
+  t.files.splice(fi,1);renderBoard();
+}
+
+/* ── 팀원 관리 ── */
+function openTeamModal(){renderTeamList();document.getElementById('inp-new-member').value='';document.getElementById('team-overlay').classList.add('open');setTimeout(()=>document.getElementById('inp-new-member').focus(),100);}
+function closeTeamModal(){document.getElementById('team-overlay').classList.remove('open');}
+function renderTeamList(){document.getElementById('team-list').innerHTML=P().members.map(m=>'<div class="team-chip"><div class="avatar">'+av(m)+'</div><span>'+m+'</span><button onclick="removeMember(\''+m+'\')" title="삭제">✕</button></div>').join('');}
+function addMember(){const v=document.getElementById('inp-new-member').value.trim();if(!v)return;if(P().members.includes(v)){alert('이미 있는 팀원이에요.');return;}P().members.push(v);addLog('add','팀원 추가: '+v);document.getElementById('inp-new-member').value='';renderTeamList();}
+function removeMember(name){if(!confirm('"'+name+'" 팀원을 삭제할까요?'))return;P().members=P().members.filter(m=>m!==name);P().tasks.forEach(t=>{t.members=(t.members||[]).filter(m=>m!==name);});addLog('edit','팀원 삭제: '+name);renderTeamList();renderBoard();}
+document.getElementById('team-overlay').addEventListener('click',function(e){if(e.target===this)closeTeamModal();});
+
+/* ── MEMBER CHECKS (fixed toggle) ── */
+function buildMemberChecks(cid,sel){
+  sel=sel||[];
+  document.getElementById(cid).innerHTML=P().members.map(m=>{
+    const checked=sel.includes(m);
+    return '<label class="mci'+(checked?' sel':'')+'" data-member="'+m+'">'+
+      '<input type="checkbox" value="'+m+'" '+(checked?'checked':'')+' onchange="syncMCI(this)">'+
+      '<span>'+m+'</span>'+
+    '</label>';
+  }).join('');
+  // label click toggles checkbox directly
+  document.querySelectorAll('#'+cid+' .mci').forEach(lbl=>{
+    lbl.addEventListener('click',function(e){
+      if(e.target.tagName==='INPUT')return; // already handled
+      const cb=this.querySelector('input[type=checkbox]');
+      cb.checked=!cb.checked;
+      syncMCI(cb);
+      e.preventDefault();
+    });
+  });
+}
+function syncMCI(cb){const lbl=cb.closest('.mci');if(lbl)lbl.classList.toggle('sel',cb.checked);}
+function getChecked(cid){return[...document.querySelectorAll('#'+cid+' input[type=checkbox]:checked')].map(x=>x.value);}
+
+/* ── 새 작업 ── */
+function openAddModal(){if(!P().members.length){alert('먼저 팀원을 추가해주세요!');openTeamModal();return;}const d=new Date();d.setDate(d.getDate()+7);document.getElementById('inp-title').value='';document.getElementById('inp-date').value=d.toISOString().slice(0,10);buildMemberChecks('add-member-checks',[]);document.getElementById('add-overlay').classList.add('open');setTimeout(()=>document.getElementById('inp-title').focus(),100);}
+function closeAddModal(){document.getElementById('add-overlay').classList.remove('open');}
+function addTask(){const title=document.getElementById('inp-title').value.trim();const ms=getChecked('add-member-checks');const due=document.getElementById('inp-date').value;if(!title){alert('작업 이름을 입력해주세요.');return;}if(!ms.length){alert('담당 팀원을 한 명 이상 선택해주세요.');return;}P().tasks.push({id:nextTaskId++,title,members:ms,due,status:'todo',files:[]});addLog('add','새 작업 추가: "'+title+'" (담당: '+ms.join(', ')+')');closeAddModal();renderBoard();}
+document.getElementById('add-overlay').addEventListener('click',function(e){if(e.target===this)closeAddModal();});
+
+/* ── 카드 수정 ── */
+function openEditModal(id){activeEditTaskId=id;const t=P().tasks.find(x=>x.id===id);document.getElementById('edit-title').value=t.title;document.getElementById('edit-date').value=t.due||'';buildMemberChecks('edit-member-checks',t.members||[]);document.getElementById('edit-overlay').classList.add('open');}
+function closeEditModal(){document.getElementById('edit-overlay').classList.remove('open');activeEditTaskId=null;}
+function saveEdit(){const t=P().tasks.find(x=>x.id===activeEditTaskId);if(!t)return;const nt=document.getElementById('edit-title').value.trim();const nm=getChecked('edit-member-checks');const nd=document.getElementById('edit-date').value;if(!nt){alert('작업 이름을 입력해주세요.');return;}if(!nm.length){alert('담당 팀원을 한 명 이상 선택해주세요.');return;}const ch=[];if(t.title!==nt)ch.push('제목: "'+t.title+'"→"'+nt+'"');if((t.members||[]).join(',')!==nm.join(','))ch.push('담당: '+(t.members||[]).join(',')+'→'+nm.join(','));if(t.due!==nd)ch.push('마감: '+fd(t.due)+'→'+fd(nd));if(!ch.length){alert('변경된 내용이 없어요.');return;}t.title=nt;t.members=nm;t.due=nd;addLog('edit','"'+nt+'" 수정 — '+ch.join(' / '));closeEditModal();renderBoard();}
+document.getElementById('edit-overlay').addEventListener('click',function(e){if(e.target===this)closeEditModal();});
+
+/* ── 피드백 ── */
+function openFbModal(id){activeFbTaskId=id;const t=P().tasks.find(x=>x.id===id);document.getElementById('fb-task-title').textContent=t.title;document.getElementById('fb-task-meta').textContent='담당: '+(t.members||[]).join(', ')+' · '+SL[t.status]+' · 마감: '+fd(t.due);document.getElementById('fb-input').value='';const sel=document.getElementById('fb-author-sel');sel.innerHTML='<option value="">이름 선택</option>'+P().members.map(m=>'<option value="'+m+'">'+m+'</option>').join('');renderFeedbacks();document.getElementById('fb-overlay').classList.add('open');setTimeout(()=>document.getElementById('fb-input').focus(),100);}
+function closeFbModal(){document.getElementById('fb-overlay').classList.remove('open');activeFbTaskId=null;}
+function renderFeedbacks(){const list=P().feedbacks[activeFbTaskId]||[];const el=document.getElementById('fb-list');el.innerHTML=!list.length?'<div class="no-item">아직 피드백이 없어요. 첫 의견을 남겨보세요!</div>':list.map((c,i)=>'<div class="fb-item"><div class="fb-header"><span class="fb-author">'+c.author+'</span><span class="fb-time">'+c.time+'</span><button class="btn-fb-del" onclick="deleteFeedback('+activeFbTaskId+','+i+')" title="삭제">✕</button></div><div class="fb-text">'+c.text+'</div></div>').join('');el.scrollTop=el.scrollHeight;}
+function submitFeedback(){const text=document.getElementById('fb-input').value.trim();const author=document.getElementById('fb-author-sel').value||'익명';if(!text)return;if(!P().feedbacks[activeFbTaskId])P().feedbacks[activeFbTaskId]=[];P().feedbacks[activeFbTaskId].push({author,text,time:nowStr()});const t=P().tasks.find(x=>x.id===activeFbTaskId);addLog('feedback','"'+t.title+'" 피드백 — '+author+': '+(text.length>30?text.slice(0,30)+'…':text));document.getElementById('fb-input').value='';renderFeedbacks();renderBoard();}
+function deleteFeedback(tid,i){if(!P().feedbacks[tid])return;const rm=P().feedbacks[tid].splice(i,1)[0];const t=P().tasks.find(x=>x.id===tid);addLog('edit','"'+t.title+'" 피드백 삭제 — '+rm.author);renderFeedbacks();renderBoard();}
+document.getElementById('fb-overlay').addEventListener('click',function(e){if(e.target===this)closeFbModal();});
+
+/* ── 기여도 ── */
+function renderStats(){
+  const p=P();
+  const total=p.tasks.length,done=p.tasks.filter(t=>t.status==='done').length;
+  const prog=p.tasks.filter(t=>t.status==='progress').length,todo=p.tasks.filter(t=>t.status==='todo').length;
+  const pct=total?Math.round(done/total*100):0;
+  const cards=[
+    {lbl:'전체 작업',val:total,color:'var(--g800)',sub:'등록된 총 작업 수'},
+    {lbl:'완료',val:done,color:'var(--ssu3)',sub:'전체의 '+pct+'%'},
+    {lbl:'진행 중',val:prog,color:'var(--ssu2)',sub:'현재 작업 중'},
+    {lbl:'할 일',val:todo,color:'var(--g600)',sub:'아직 시작 전'},
+  ];
+  document.getElementById('stats-summary').innerHTML=cards.map((c,i)=>
+    '<div class="stat-card anim-fadedown" style="animation-delay:'+(i*0.07).toFixed(2)+'s">'+
+    '<div class="lbl">'+c.lbl+'</div>'+
+    '<div class="val stat-num" data-target="'+c.val+'" style="color:'+c.color+'">0</div>'+
+    '<div class="sub">'+c.sub+'</div></div>'
+  ).join('');
+  // count up each stat val
+  document.querySelectorAll('.stat-num').forEach(el=>{
+    const target=parseInt(el.dataset.target);
+    const delay=parseFloat(el.closest('.stat-card').style.animationDelay||'0')*1000;
+    setTimeout(()=>countUpEl(el,0,target,600,v=>String(v)),delay+50);
+  });
+  // member bars
+  document.getElementById('member-bars').innerHTML=p.members.map(name=>{
+    const mine=p.tasks.filter(t=>(t.members||[]).includes(name));
+    const md=mine.filter(t=>t.status==='done').length,mp=mine.filter(t=>t.status==='progress').length,mt=mine.filter(t=>t.status==='todo').length;
+    const mpct=mine.length?Math.round(md/mine.length*100):0;
+    return'<div class="mrow">'+
+      '<div class="minfo">'+
+        '<div class="mname"><div class="avatar">'+av(name)+'</div>'+name+'</div>'+
+        '<div class="mpills"><span class="pill p-todo">할 일 '+mt+'</span><span class="pill p-prog">진행 중 '+mp+'</span><span class="pill p-done">완료 '+md+'</span></div>'+
+      '</div>'+
+      '<div class="btrack"><div class="bfill" id="bf-'+name.replace(/\s/g,'_')+'" style="width:0%" data-target="'+mpct+'"></div></div>'+
+      '<div class="blbl">완료율 '+mpct+'%</div>'+
+    '</div>';
+  }).join('');
+  // animate member bars
+  setTimeout(()=>{
+    document.querySelectorAll('.bfill[data-target]').forEach(el=>{
+      const target=el.dataset.target+'%';
+      el.style.transition='none';el.style.width='0%';
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        el.style.transition='width 0.75s cubic-bezier(0.22,1,0.36,1)';
+        el.style.width=target;
+      }));
+    });
+  },50);
+}
+
+/* ── 로그 ── */
+function renderLog(){
+  const logs=P().logs;const el=document.getElementById('log-list');
+  if(!logs.length){el.innerHTML='<div class="no-item">아직 기록된 진행 내역이 없어요.</div>';return;}
+  // logs are already newest-first; animate top to bottom
+  el.innerHTML=logs.map((l,i)=>
+    '<div class="log-item anim-fadedown" style="animation-delay:'+(i*0.06).toFixed(2)+'s">'+
+    '<div class="log-dot '+l.type+'"></div>'+
+    '<div class="log-body"><div class="log-desc">'+l.desc+'</div><div class="log-time">'+l.time+'</div></div>'+
+    '</div>'
+  ).join('');
+}
+
+/* ── NAV ── */
+function showKbPage(id,btn){document.querySelectorAll('.kb-page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('#view-kanban nav button').forEach(b=>b.classList.remove('active'));document.getElementById('kb-'+id).classList.add('active');btn.classList.add('active');if(id==='stats')renderStats();if(id==='log')renderLog();}
+
+
+/* ══ NICKNAME ══ */
+let userNick = localStorage.getItem('ssu_nick') || '';
+
+function updateSubtitle(){
+  const el = document.getElementById('subtitle-text');
+  if(el) el.textContent = userNick + '님의 워크슈페이스';
+}
+
+function saveNick(){
+  const v = document.getElementById('nick-input').value.trim();
+  if(!v){ document.getElementById('nick-input').focus(); return; }
+  userNick = v;
+  localStorage.setItem('ssu_nick', v);
+  document.getElementById('nick-overlay').classList.add('hidden');
+  updateSubtitle();
+  animateHomeEntry();
+}
+
+function animateHomeEntry(){
+  // Re-trigger fadeup animations on static home elements
+  const selectors = [
+    '.logo-title',
+    '#home-subtitle',
+    '.home-hero h1',
+    '.home-hero p',
+    '#proj-count-label',
+    '#view-home .btn-primary',
+    '.home-bg-logo'
+  ];
+  selectors.forEach((sel, i) => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    el.classList.remove('anim-fadeup','anim-fadein');
+    el.offsetHeight;
+    // re-add the right class
+    if (sel === '.home-bg-logo') el.classList.add('anim-fadein');
+    else el.classList.add('anim-fadeup');
+  });
+  // re-trigger empty state text if visible
+  const emptySpan = document.querySelector('#home-empty-center span');
+  if (emptySpan) {
+    emptySpan.classList.remove('anim-fadeup');
+    emptySpan.offsetHeight;
+    emptySpan.classList.add('anim-fadeup');
+  }
+  // proj cards are rendered by renderHome after this; they carry their own anim-fadeup
+}
+
+function openNickEdit(){
+  document.getElementById('nick-edit-input').value = userNick;
+  document.getElementById('nick-edit-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('nick-edit-input').focus(),100);
+}
+function closeNickEdit(){ document.getElementById('nick-edit-overlay').classList.remove('open'); }
+function saveNickEdit(){
+  const v = document.getElementById('nick-edit-input').value.trim();
+  if(!v){ alert('닉네임을 입력해주세요.'); return; }
+  userNick = v;
+  localStorage.setItem('ssu_nick', v);
+  closeNickEdit();
+  updateSubtitle();
+}
+document.getElementById('nick-edit-overlay').addEventListener('click',function(e){if(e.target===this)closeNickEdit();});
+
+/* ── BOOT ── */
+updateSubtitle();
+if(!userNick){ setTimeout(()=>document.getElementById("nick-input").focus(),200); } else { document.getElementById("nick-overlay").classList.add("hidden"); }
+renderHome();
+</script>
+
+<!-- ── 닉네임 온보딩 ── -->
+<div class="nick-overlay" id="nick-overlay">
+  <div class="nick-card">
+    <div class="nick-logo">
+      <span style="color:#006e93">work</span><span style="color:#02a6cb;font-weight:400">:</span><span style="color:#62c6c4">SSU</span><span style="color:#02a6cb;font-weight:400">:</span><span style="color:#006e93">pace</span>
+    </div>
+    <div class="nick-q">어떻게 불러 드릴까요?</div>
+    <div class="nick-sub">처음 한 번만 입력하면 돼요 😊</div>
+    <input class="nick-input" id="nick-input" type="text" maxlength="20" placeholder="닉네임을 입력하세요" onkeydown="if(event.key==='Enter')saveNick()">
+    <button class="nick-btn" onclick="saveNick()">시작하기 →</button>
+  </div>
+</div>
+
+<!-- ── 닉네임 수정 모달 ── -->
+<div class="nick-edit-overlay" id="nick-edit-overlay">
+  <div class="nick-edit-card">
+    <h3>✏️ 닉네임 수정</h3>
+    <div class="form-group">
+      <label>새 닉네임</label>
+      <input type="text" id="nick-edit-input" maxlength="20" placeholder="새 닉네임 입력" onkeydown="if(event.key==='Enter')saveNickEdit()">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeNickEdit()">취소</button>
+      <button class="btn-confirm" onclick="saveNickEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
